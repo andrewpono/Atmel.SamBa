@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+
+    <MajorVersion>1</MajorVersion>
+    <MinorVersion>0</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <!-- i.e. -beta.1 or empty -->
+    <PreReleaseSuffix></PreReleaseSuffix>
+
+    <!-- NuGet & informational version (SemVer) -->
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)$(PreReleaseSuffix)</Version>
+    <!-- Binary compatibility version: keep stable for whole major -->
+    <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
+    <!-- File / diagnostic version (Windows "File version") -->
+    <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion).0</FileVersion>
+    <!-- Prevent SourceLink/SDK from appending +commitHash to the product version
+         shown in the window title and Windows file properties. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Anp.Atmel.SamBa.Lite</RootNamespace>
+    <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
+    <UseWPF>true</UseWPF>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>sambalite.ico</ApplicationIcon>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AssemblyTitle>SamBaLite</AssemblyTitle>
+    <AssemblyName>SamBaLite</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Atmel.SamBa\Atmel.SamBa.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="sambalite.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Costura.Fody" Version="6.0.0">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Refractored.MvvmHelpers" Version="1.6.2" />
+    <PackageReference Include="RestoreWindowPlace" Version="3.1.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.6.1" />
+    <PackageReference Include="WPFHexaEditor" Version="2.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Configuration" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,95 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net48;netstandard2.0;net8.0;net8.0-windows7.0</TargetFrameworks>
+
+    <MajorVersion>1</MajorVersion>
+    <MinorVersion>0</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <!-- i.e. -beta.1 or empty -->
+    <PreReleaseSuffix></PreReleaseSuffix>
+
+    <!-- NuGet & informational version (SemVer) -->
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)$(PreReleaseSuffix)</Version>
+    <!-- Binary compatibility version: keep stable for whole major -->
+    <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
+    <!-- File / diagnostic version (Windows “File version”) -->
+    <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion).0</FileVersion>
+    <!-- Prevent SourceLink/SDK from appending +commitHash to the product version
+         shown in Windows file properties. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <LangVersion>7.3</LangVersion>
+    <RootNamespace>Anp.Atmel.SamBa</RootNamespace>
+    <AssemblyName>Atmel.SamBa</AssemblyName>
+
+    <!-- Generate XML documentation output; all public APIs should be documented. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+    <Authors>Andrew Pono</Authors>
+    <PackageIcon>samba_icon_128.png</PackageIcon>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <Description>.NET library for Atmel/Microchip SAM-BA firmware flashing over USB CDC — device discovery, chip identification (SAM7/SAM3/SAM4/SAM9XE/SAMx7x/SAMD21/SAMD51), flash erase/write/verify, GPNVM boot configuration, lock regions and security bit. Applet-free port of BOSSA. Cross-platform: Windows, Linux, macOS (device discovery and hot-plug watching are Windows-only).</Description>
+    <PackageTags>atmel;microchip;sam-ba;samba;bossa;bossac;firmware;firmware-update;flash;bootloader;sam3x;sam4s;samd21;samd51;same70;sam7s;arduino;due;zero;usb-cdc;serial;embedded;microcontroller;linux;macos;cross-platform</PackageTags>
+    <RepositoryUrl>https://github.com/andrewpono/Atmel.SamBa</RepositoryUrl>
+    <Copyright>2026 Andrew Pono</Copyright>
+    <Title>Atmel SAM-BA Flashing Library for .NET</Title>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+    <PackageId>Anp.$(AssemblyName)</PackageId>
+  </PropertyGroup>
+  <!-- Platform split: the two Windows TFMs keep the Win32 serial stack (transport, discovery,
+       watcher, PnP port metadata); netstandard2.0 and net8.0 get a System.IO.Ports transport and
+       no discovery surface — a caller on those TFMs lists ports via SerialPort.GetPortNames()
+       itself (the CLI does this in its own portable code path, not through this library).
+       SAMBA_WIN32 gates the small in-file forks in SamBaDevice.cs; whole files are switched with
+       the Compile Remove items below. -->
+  <PropertyGroup>
+    <IsWin32Target>false</IsWin32Target>
+    <IsWin32Target Condition="'$(TargetFramework)' == 'net48'">true</IsWin32Target>
+    <IsWin32Target Condition="'$(TargetFramework)' == 'net8.0-windows7.0'">true</IsWin32Target>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsWin32Target)' == 'true'">
+    <DefineConstants>$(DefineConstants);SAMBA_WIN32</DefineConstants>
+  </PropertyGroup>
+  <!-- Each removed file is re-added as None so it stays visible in Solution Explorer, which
+       renders one TFM's evaluation; None items are neither compiled nor packed. -->
+  <ItemGroup Condition="'$(IsWin32Target)' == 'true'">
+    <PackageReference Include="Anp.Serial.Win32" Version="1.0.0" />
+    <Compile Remove="Protocol\PortableSerialTransport.cs" />
+    <None Include="Protocol\PortableSerialTransport.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsWin32Target)' != 'true'">
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+    <Compile Remove="Protocol\SerialPortTransport.cs" />
+    <None Include="Protocol\SerialPortTransport.cs" />
+    <Compile Remove="SamBaDeviceDiscovery.cs" />
+    <None Include="SamBaDeviceDiscovery.cs" />
+    <Compile Remove="SamBaDeviceWatcher.cs" />
+    <None Include="SamBaDeviceWatcher.cs" />
+    <Compile Remove="Events\SamBaDeviceArrivedEventArgs.cs" />
+    <None Include="Events\SamBaDeviceArrivedEventArgs.cs" />
+    <Compile Remove="Events\SamBaDeviceRemovedEventArgs.cs" />
+    <None Include="Events\SamBaDeviceRemovedEventArgs.cs" />
+    <Compile Remove="Configuration\SamBaDiscoveryOptions.cs" />
+    <None Include="Configuration\SamBaDiscoveryOptions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Atmel.SamBa.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="samba_icon_128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+</Project>

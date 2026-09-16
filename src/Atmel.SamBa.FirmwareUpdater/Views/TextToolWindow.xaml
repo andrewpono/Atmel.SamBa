@@ -1,0 +1,13 @@
+﻿<Window x:Class="Anp.Atmel.SamBa.FirmwareUpdater.Views.TextToolWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStartupLocation="CenterOwner" 
+        WindowStyle="ToolWindow" 
+        ShowInTaskbar="False" 
+        Width="400" Height="400" 
+        Title="Details">
+    <Grid Margin="10">
+        <TextBox Text="{Binding Text, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+    </Grid>
+</Window>

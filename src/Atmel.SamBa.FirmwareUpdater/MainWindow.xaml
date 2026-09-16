@@ -1,0 +1,356 @@
+﻿<Window x:Class="Anp.Atmel.SamBa.FirmwareUpdater.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:beh="clr-namespace:Anp.Atmel.SamBa.FirmwareUpdater.Behaviors"
+        xmlns:viewModels="clr-namespace:Anp.Atmel.SamBa.FirmwareUpdater.ViewModels"
+        mc:Ignorable="d"
+        Title="{Binding WindowTitle}" Icon="/samba.ico"
+        Width="400"
+        MinWidth="400"
+        Height="360"
+        d:Height="500"
+        MinHeight="360"
+        ResizeMode="CanResize" 
+        
+        Background="{StaticResource PanelBackgroundBrush}"
+        
+        beh:WindowHeightDeltaBehavior.BaselineIsAdvanced="False"
+        beh:WindowHeightDeltaBehavior.IsAdvancedMode="{Binding IsAdvancedMode}"
+        beh:WindowHeightDeltaBehavior.Delta="240"
+        beh:WindowHeightDeltaBehavior.ClampToWorkArea="True"
+        
+        d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel, IsDesignTimeCreatable=True}"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <Style x:Key="ComboBoxSelectOverlay" TargetType="TextBlock">
+            <Setter Property="Grid.ZIndex" Value="10"/>
+            <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="Visibility" Value="Hidden"/>
+            <Setter Property="Text" Value="-- Select Device --"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontStyle" Value="Italic"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Path=SelectedItem}" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=Items.Count}" Value="0">
+                    <Setter Property="Text" Value="-- No Devices Found --"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="TextboxFileOverlay" TargetType="TextBlock">
+            <Setter Property="Grid.ZIndex" Value="10"/>
+            <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="Visibility" Value="Hidden"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontStyle" Value="Italic"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding FirmwareFilePath}" Value="">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding FirmwareFilePath}" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Bordered "0x" + borderless text box hex-address entry. -->
+        <Style x:Key="HexEntryBorder" TargetType="Border">
+            <Setter Property="BorderBrush" Value="Gray" />
+            <Setter Property="BorderThickness" Value="0.5" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="HexEntryPrefix" TargetType="Label">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="2,0,0,0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="White" />
+        </Style>
+
+        <Style x:Key="HexEntryBox" TargetType="TextBox">
+            <Setter Property="MinWidth" Value="60" />
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="MaxLength" Value="8" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Menu -->
+        <Grid Grid.Row="0"  IsEnabled="{Binding IsNotBusy}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Menu Grid.Row="0" >
+                <MenuItem Header="_File">
+                    <MenuItem Header="Open FW _File..." Command="{Binding OpenFirmwareCommand}" ToolTip="Select a firmware file to write" />
+                    <Separator />
+                    <MenuItem Header="Open Settings _Location" Command="{Binding OpenSettingsLocationCommand}" 
+                              ToolTip="Open the folder containing the settings XML file" />
+                    <Separator />
+                    <MenuItem Header="_Save Log..." Command="{Binding SaveLogCommand}" ToolTip="Save the current status log to a text file" />
+                </MenuItem>
+                <MenuItem Header="_Tools">
+                    <MenuItem Header="_Erase" Command="{Binding EraseCommand}" ToolTip="Erase entire device flash" />
+                    <MenuItem Header="_Reset" Command="{Binding ResetCommand}" ToolTip="Reset the device" />
+                    <MenuItem Header="_Unlock" Command="{Binding UnlockCommand}" ToolTip="Unlock all flash lock regions" />
+                    <Separator />
+                    <MenuItem Header="Show Device _Properies" Command="{Binding ShowDevicePropertiesCommand}" ToolTip="Show selected SAM-BA device properties" />
+                    <MenuItem Header="Show Chip _Info" Command="{Binding ShowChipInfoCommand}" ToolTip=" Try to read and show selected device chip info" />
+                </MenuItem>
+                <MenuItem Header="_Options">
+                    <MenuItem.Resources>
+                        <!-- Keep the Options menu open when toggling any item. -->
+                        <Style TargetType="MenuItem">
+                            <Setter Property="StaysOpenOnClick" Value="True" />
+                        </Style>
+                    </MenuItem.Resources>
+                    <MenuItem Header="_Advanced Mode" IsCheckable="True" IsChecked="{Binding IsAdvancedMode}"
+                              ToolTip="Show advanced options and event log" />
+                    <Separator />
+                    <MenuItem Header="Enable _Watcher" IsCheckable="True" IsChecked="{Binding IsWatcherEnabled}" 
+                              ToolTip="Enable device watcher (event-driven plug/unplug detection)" />
+                    <MenuItem Header="Device _Filter" ToolTip="Which USB serial devices appear in the device list">
+                        <MenuItem Header="Atmel SAM-BA (03EB:6124)" IsCheckable="True" IsChecked="{Binding UseAtmelFilter}"
+                                  ToolTip="List only Atmel SAM-BA USB CDC devices (default)" />
+                        <MenuItem IsCheckable="True" IsChecked="{Binding UseCustomFilter}"
+                                  ToolTip="Filter by a custom USB VID/PID (hex, up to 4 digits);&#x0a;leave a field blank to match any. Click a box to edit, or the row to select.">
+                            <MenuItem.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="VID 0x" VerticalAlignment="Center" />
+                                    <TextBox Width="48" Margin="2,0,0,0" MaxLength="4" VerticalContentAlignment="Center"
+                                             beh:HexInputBehavior.IsEnabled="True"
+                                             PreviewMouseLeftButtonDown="HexBox_PreviewMouseLeftButtonDown"
+                                             Text="{Binding CustomVendorIdHex}" />
+                                    <TextBlock Text="PID 0x" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                    <TextBox Width="48" Margin="2,0,0,0" MaxLength="4" VerticalContentAlignment="Center"
+                                             beh:HexInputBehavior.IsEnabled="True"
+                                             PreviewMouseLeftButtonDown="HexBox_PreviewMouseLeftButtonDown"
+                                             Text="{Binding CustomProductIdHex}" />
+                                </StackPanel>
+                            </MenuItem.Header>
+                        </MenuItem>
+                        <MenuItem Header="Any device" IsCheckable="True" IsChecked="{Binding MatchAnyDevice}"
+                                  ToolTip="Ignore the VID/PID filter and list every serial port;&#x0a;use for Arduino / custom SAM boards. Device identity is confirmed on connect." />
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem Header="Chip _Identification"
+                              ToolTip="Which probe decides AT91SAM7/9 (legacy) vs. Cortex-M;&#x0a;Auto is right almost always - force only a part whose core is already known">
+                        <MenuItem Header="Auto" IsCheckable="True" IsChecked="{Binding IdentifyAuto}"
+                                  ToolTip="Read the reset vector and take the branch it selects (default)" />
+                        <MenuItem Header="Force ChipID (AT91SAM7/9)" IsCheckable="True"
+                                  IsChecked="{Binding IdentifyForceChipId}"
+                                  ToolTip="Skip the reset-vector read; go to the legacy CHIPID probe.&#x0a;Forcing this on a Cortex-M part hangs the SAM-BA monitor." />
+                        <MenuItem Header="Force CpuID (Cortex-M)" IsCheckable="True"
+                                  IsChecked="{Binding IdentifyForceCpuId}"
+                                  ToolTip="Skip the reset-vector read; go to the Cortex-M CPUID probe.&#x0a;Forcing this on an AT91SAM7/9 part hangs the SAM-BA monitor." />
+                    </MenuItem>
+                    <MenuItem Header="Flash _Geometry Precedence"
+                              ToolTip="Which account wins when the device's own reading disagrees with the table;&#x0a;Table is right unless the table row itself is known to be wrong">
+                        <MenuItem Header="Table" IsCheckable="True" IsChecked="{Binding GeometryPrecedenceTable}"
+                                  ToolTip="Trust the datasheet-sourced table row on disagreement (default)" />
+                        <MenuItem Header="Device" IsCheckable="True" IsChecked="{Binding GeometryPrecedenceDevice}"
+                                  ToolTip="Trust the device's own reading on disagreement.&#x0a;Only safe if the table row is known to be wrong for this part." />
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem Header="Enable _Safe Mode" IsCheckable="True" IsChecked="{Binding IsSafeModeEnabled}"
+                              ToolTip="Load the flash latch one word at a time instead of one batched transfer per page;&#x0a;slower, but robust with bootloaders that drop data mid-stream" />
+                    <Separator />
+                    <MenuItem Header="_Boot to Flash" IsCheckable="True" IsChecked="{Binding FwBootToFlash}"
+                              ToolTip="Set the boot source to flash after the update completes (default on, does nothing if not supported)" />
+                    <MenuItem Header="Set Security ⚠" IsCheckable="True" IsChecked="{Binding FwSecurity}" Foreground="DarkRed"
+                              ToolTip="Permanently set the security bit after the update - blocks all SAM-BA&#x0a;access; only the ERASE pin can recover the part. Confirmed before use; not persisted." />
+                    <Separator />
+                    <MenuItem StaysOpenOnClick="True" ToolTip="Maximum number of event log entries.">
+                        <MenuItem.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <AccessText Text="Max _Log Entries" VerticalAlignment="Center" />
+                                <TextBox Width="50" Text="{Binding MaxLogEntries}" Margin="6,0,0,0"
+                                         VerticalContentAlignment="Center" ToolTip="Maximum number of event log entries"/>
+                            </StackPanel>
+                        </MenuItem.Header>
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem Header="_Help">
+                    <MenuItem Header="Show Supported _Chips" Command="{Binding ShowSupportedChipsCommand}"
+                              ToolTip="List all chip types this tool can flash" />
+                    <Separator />
+                    <MenuItem Header="_About" Command="{Binding ShowAboutCommand}"
+                              ToolTip="Show the app and library version" />
+                </MenuItem>
+            </Menu>
+        </Grid>
+
+        <!-- Device Selection -->
+        <GroupBox Header="Device" Grid.Row="1" Margin="0,6,0,0" IsEnabled="{Binding IsNotBusy}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ComboBox x:Name="DeviceComboBox" Grid.Row="1" Margin="5" ItemsSource="{Binding DeviceList}" SelectedItem="{Binding SelectedDevice}" 
+                      DisplayMemberPath="DisplayName" ToolTip="Select a connected SAM-BA device">
+                    <ComboBox.ContextMenu>
+                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="Properties..." Command="{Binding ShowDevicePropertiesCommand}" ToolTip="Show properties for the selected device" />
+                            <MenuItem Header="Refresh" Command="{Binding RefreshDevicesCommand}" ToolTip="Re-scan for SAM-BA devices" />
+                        </ContextMenu>
+                    </ComboBox.ContextMenu>
+                </ComboBox>
+                <TextBlock DataContext="{Binding ElementName=DeviceComboBox}" Padding="5,0" Style="{StaticResource ComboBoxSelectOverlay}"/>
+                <Button Grid.Column="1" Content="&#x27f3;" Padding="2,0" Margin="5" FontSize="18" FontFamily="Arial"                
+                        Command="{Binding RefreshDevicesCommand}" ToolTip="Re-scan for SAM-BA devices" >
+                </Button>
+            </Grid>
+        </GroupBox>
+
+        <!-- Firmware File -->
+        <GroupBox Grid.Row="2" Header="Firmware File" Margin="0,6,0,0" ToolTip="Firmware file selection">
+            <Grid Margin="5" IsEnabled="{Binding IsNotBusy}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0">
+                    <TextBox Text="{Binding FirmwareFilePath, UpdateSourceTrigger=PropertyChanged}"
+                             AllowDrop="True" beh:FileDropBehavior.FileDropCommand="{Binding FirmwareFileDroppedCommand}"
+                             ToolTip="Firmware file path (drag and drop accepted)" />
+                    <TextBlock Text="-- Select FW file --" Foreground="#FF8A8A8A" Margin="5,0,0,0"
+                               Style="{StaticResource TextboxFileOverlay}" />
+                </Grid>
+
+                <Button Grid.Column="1" Content="&#x2026;" Padding="4,0,4,0" Margin="10,0,0,0" FontFamily="Arial"
+                        Command="{Binding OpenFirmwareCommand}" ToolTip="Browse for a firmware file" />
+            </Grid>
+        </GroupBox>
+
+        <!-- Write / Update -->
+        <GroupBox Grid.Row="3" Header="Write" Margin="0,6,0,0" IsEnabled="{Binding IsNotBusy}">
+            <Grid Margin="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="1" Grid.RowSpan="2" Content="_Update" Padding="6" MinWidth="60" 
+                        Style="{StaticResource PrimaryButton}" d:Command="{x:Null}"
+                        Command="{Binding UpdateCommand}" ToolTip="Start firmware update" />
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <CheckBox Grid.Column="0" Content="Unlock" IsChecked="{Binding AutoUnlock}" Margin="0,0,14,0"
+                              ToolTip="Unlock any locked flash regions before erase/write, so programming a locked part&#x0a;doesn't fail with a lock error (default off)" />
+
+                    <CheckBox Grid.Column="1" Content="Erase All" IsChecked="{Binding EraseAllFlash}" Margin="0,0,14,0"
+                              ToolTip="Erase the entire flash before writing (vs only blocks needed)" />
+
+                    <CheckBox Grid.Column="2" Content="Verify" IsChecked="{Binding VerifyAfterWrite}" Margin="0,0,14,0"
+                              ToolTip="Verify flash after writing" />
+
+                    <CheckBox Grid.Column="3" Content="Reset" IsChecked="{Binding ResetAfterWrite}" Margin="0,0,14,0"
+                              ToolTip="Reset device after successful update (best effort, default on)" />
+                </Grid>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0" d:Visibility="Visible"
+                            Visibility="{Binding IsAdvancedMode, Converter={StaticResource BoolToVis}}">
+                    <Label Content="Offset:" VerticalAlignment="Center" Padding="0" Margin="0,0,6,0"
+                           ToolTip="Where in flash to write the image, relative to the flash base (hex)" />
+                    <Border Style="{StaticResource HexEntryBorder}" Margin="0,0,14,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="0x" Style="{StaticResource HexEntryPrefix}" />
+                            <TextBox Style="{StaticResource HexEntryBox}"
+                                     Text="{Binding FwOffsetHex, UpdateSourceTrigger=PropertyChanged,
+                                            ValidatesOnDataErrors=True}"
+                                     beh:HexInputBehavior.IsEnabled="True"
+                                     ToolTip="Offset into flash to write the image at (hex)" />
+                        </StackPanel>
+                    </Border>
+
+                    <Label Content="Lock After:" VerticalAlignment="Center" Padding="0" Margin="0,0,6,0"
+                           ToolTip="Which flash lock regions to lock after the update" />
+                    <ComboBox ItemsSource="{Binding LockScopeValues}" SelectedItem="{Binding FwLockScope}"
+                              MinWidth="70" VerticalAlignment="Center"
+                              ToolTip="None: leave alone. Written: image regions. All: every region" />
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+
+        <!-- Advanced interface -->
+        <Grid Grid.Row="4" Margin="0,5,0,0" Visibility="{Binding IsAdvancedMode, Converter={StaticResource BoolToVis}}"
+              d:Visibility="Visible">
+            <!-- Status Log -->
+            <GroupBox Header="Log">
+                <Grid Margin="0,6,0,0">
+                    <ListBox ItemsSource="{Binding LogEntries}" MinHeight="160" BorderThickness="0"
+                             SelectionMode="Extended" beh:AutoScrollToBottomBehavior.IsEnabled="True"
+                             beh:CopySelectedItemsBehavior.Command="{Binding CopySelectedLogCommand}"
+                             beh:DeselectOnEmptyClickBehavior.IsEnabled="True">
+                        <ListBox.ContextMenu>
+                            <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                <MenuItem Header="Copy" ToolTip="Copy selected status messages to clipboard" 
+                                          Command="{Binding CopySelectedLogCommand}" InputGestureText="Ctrl+C"
+                                          CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                <MenuItem Header="Clear" ToolTip="Clear all status messages" Command="{Binding ClearLogCommand}"  InputGestureText="Del"/>
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
+                        <ListBox.InputBindings>
+                            <KeyBinding Key="Delete" Command="{Binding ClearLogCommand}" />
+                        </ListBox.InputBindings>
+                    </ListBox>
+                </Grid>
+            </GroupBox>
+        </Grid>
+
+        <!-- Overlay -->
+        <GroupBox Header="Status" Grid.Row="4" Padding="6,0" VerticalAlignment="Stretch" d:Visibility="Visible"
+                  Visibility="{Binding IsAdvancedMode, Converter={StaticResource BoolToVis}, ConverterParameter=invert}"
+                  ToolTip="Last status (basic mode)">
+
+            <Label Content="{Binding ProgressStage}" d:Content="Status" VerticalContentAlignment="Center"
+                   FontWeight="Bold" FontSize="14" Foreground="DarkBlue"/>
+        </GroupBox>
+
+        <!-- Progress -->
+        <Grid Grid.Row="5" Margin="0,10,0,0" >
+            <ProgressBar Height="22" Minimum="0"
+                         Maximum="{Binding ProgressMaximum}"
+                         Value="{Binding ProgressValue, Mode=OneWay}"
+                         IsIndeterminate="{Binding IsProgressIndeterminate}" />
+
+            <TextBlock Text="{Binding ProgressMessage}" HorizontalAlignment="Center" 
+                       VerticalAlignment="Center" FontWeight="SemiBold" />
+        </Grid>
+    </Grid>
+</Window>
