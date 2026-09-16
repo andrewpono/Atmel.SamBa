@@ -15,7 +15,7 @@ firmware updater.
 - **Firmware update** — erase / write / verify a raw binary image, optional reset after
 - **Erase** — full chip erase (Arduino `X#` chip-erase when advertised, controller erase otherwise)
 - **Reset** — per-family RSTC/AIRCR device reset
-- **Memory map** — show the identified chip's flash geometry and monitor version
+- **Chip Info** — show the identified chip's flash geometry and monitor version
 - **Supported chips** — list every chip type the tool can flash (Help → Show Supported Chips),
   grouped by family; no device required
 - **About** — Help → About shows the app version and the `Atmel.SamBa` library version
